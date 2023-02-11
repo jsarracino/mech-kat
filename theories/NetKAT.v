@@ -119,10 +119,21 @@ Section NetKAT.
     forall pre post, 
       interp_kat l pre post <-> interp_kat r pre post.
 
+  Require Import Coq.Logic.FunctionalExtensionality.
+
   Lemma put_pkt_iota : 
-    forall p f v,
-      pkt_put p f (p v) = p.
-  Admitted.
+    forall p f,
+      pkt_put p f (p f) = p.
+  Proof.
+    intros.
+    extensionality x.
+    unfold pkt_put.
+    destruct (_ == _) eqn:?.
+    - inversion e;
+      subst.
+      trivial.
+    - trivial.
+  Qed.
 
   Lemma check_put : 
     forall f v h,
