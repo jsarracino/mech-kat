@@ -1,7 +1,4 @@
 
-
-Unset Positivity Checking.
-
 Section NetKAT.
   Variable (Fields: Type).
   Variable (Vals: Type).
@@ -44,27 +41,21 @@ Section NetKAT.
      Notice that the original paper maps to a powerset; the intuition here is that interp_test t pre post is true for all possible histories post in the powerset of the paper's interp definition.
   *)
   (* #[ bypass_check(positivity=yes) ] *)
-  Inductive interp_test : test -> history -> Prop := 
-  | interp_tu : forall h, interp_test t_unit h
-  | interp_check_nil : 
-    forall pkt f v, 
-      pkt f = v -> 
-      interp_test (t_check f v) (ne_nil pkt)
-  | interp_check_cons : 
-    forall pkt h f v, 
-      pkt f = v -> 
-      interp_test (t_check f v) (ne_cons pkt h)
-  | interp_t_or : 
-    forall t_l t_r h,
-      interp_test t_l h \/ interp_test t_r h ->
-      interp_test (t_or t_l t_r) h
-  | interp_t_and : 
-    forall t_l t_r h,
-      interp_test t_l h /\ interp_test t_r h -> 
-      interp_test (t_and t_l t_r) h
-  | interp_neg: forall t h, 
-    (~ interp_test t h) -> (* this is the definition that angers the positivity checker, since ~ A unfolds to (A -> False ). *)
-    interp_test (t_neg t) h.
+  Fixpoint interp_test (t: test) (h: history) := 
+    match t with 
+    | t_unit => True
+    | t_fail => False
+    | t_check f v => 
+      match h with 
+      | ne_nil p => p f = v
+      | ne_cons p _ => p f = v
+      end
+    | t_or t_l t_r => 
+      interp_test t_l h \/ interp_test t_r h
+    | t_and t_l t_r => 
+      interp_test t_l h /\ interp_test t_r h
+    | t_neg t => ~ interp_test t h
+    end.
   
 
   (* Two tests are equivalent (i.e. KAT equal) if they have identical behavior on histories *)
@@ -80,7 +71,7 @@ Section NetKAT.
     split; intros.
     - inversion H; subst.
       intuition.
-    - econstructor.
+    - simpl.
       intuition.
   Qed.
 
@@ -139,11 +130,13 @@ Section NetKAT.
       interp_kat (k_put f v) h h.
   Proof.
     intros.
-    inversion H; subst; clear H.
-    - assert (pkt0 = pkt_put pkt0 f (pkt0 f)) by now erewrite put_pkt_iota.
+    simpl in H.
+    destruct h;
+    subst.
+    - assert (p = pkt_put p f (p f)) by now erewrite put_pkt_iota.
       erewrite H at 3.
       econstructor.
-    - assert (pkt0 = pkt_put pkt0 f (pkt0 f)) by now erewrite put_pkt_iota.
+    - assert (p = pkt_put p f (p f)) by now erewrite put_pkt_iota.
       erewrite H at 3.
       econstructor.
   Qed.
@@ -167,16 +160,15 @@ Section NetKAT.
       subst;
       clear H0;
       repeat econstructor;
+      simpl;
       unfold pkt_put;
       destruct (_ == _) eqn:?;
       congruence.
     - inversion H; subst.
       clear H.
       econstructor.
-      split.
-      econstructor.
-      eapply H1.
-      eapply check_put.
+      split; try econstructor;
+      try eapply check_put;
       trivial.
   Qed.
 End NetKAT.
