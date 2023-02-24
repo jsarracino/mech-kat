@@ -84,9 +84,9 @@ Section NetKAT.
 
   Inductive interp_kat : kat -> history -> history -> Prop := 
   | interp_k_test : 
-    forall t pre post, 
-      interp_test t post -> 
-      interp_kat (k_test t) pre post
+    forall t h, 
+      interp_test t h -> 
+      interp_kat (k_test t) h h
   | interp_put_nil : 
     forall p f v, 
       interp_kat (k_put f v) (ne_nil p) (ne_nil (pkt_put p f v))
@@ -152,6 +152,19 @@ Section NetKAT.
       econstructor.
   Qed.
 
+  Lemma put_inj:
+    forall f v pre post post', 
+      interp_kat (k_put f v) pre post -> 
+      interp_kat (k_put f v) pre post' -> 
+      post = post'.
+  Proof.
+    destruct pre;
+    intros;
+    inversion H; subst;
+    inversion H0; subst;
+    trivial.
+  Qed.
+
   Lemma pa_filter_mod : 
     forall f v,
       equiv_kat 
@@ -166,15 +179,11 @@ Section NetKAT.
       clear H.
       destruct H4.
       inversion H; subst.
-      clear H.
-      inversion H0;
-      subst;
-      clear H0;
-      repeat econstructor;
-      simpl;
-      unfold pkt_put;
-      destruct (_ == _) eqn:?;
-      congruence.
+      pose proof (check_put _ _ _ H2).
+      assert (post = post0) by (eapply put_inj; eauto).
+      subst.
+      econstructor.
+      trivial.
     - inversion H; subst.
       clear H.
       econstructor.
