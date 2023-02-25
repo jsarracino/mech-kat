@@ -4,24 +4,24 @@ Section NetKAT.
   Variable (Vals: Type).
 
   Inductive test := 
-  | t_unit | t_fail
-  | t_check : Fields -> Vals -> test 
-  | t_or : test -> test -> test
-  | t_and : test -> test -> test
-  | t_neg : test -> test.
+  | t_unit | t_fail (* 1 and 0 *)
+  | t_check : Fields -> Vals -> test (* f = v *)
+  | t_or : test -> test -> test (* l + r *)
+  | t_and : test -> test -> test (* l . r *)
+  | t_neg : test -> test. (* ! t *)
 
   Inductive kat := 
   | k_test : test -> kat
-  | k_put : Fields -> Vals -> kat
-  | k_or : kat -> kat -> kat
-  | k_and : kat -> kat -> kat
-  | k_star : kat -> kat 
+  | k_put : Fields -> Vals -> kat (* f <- v *)
+  | k_or : kat -> kat -> kat (* l + r *)
+  | k_and : kat -> kat -> kat (* l . r *)
+  | k_star : kat -> kat  (* x^* *)
   | k_dup : kat.
 
   (* non-empty lists *)
   Inductive ne_list (V: Type) : Type := 
-  | ne_nil : V -> ne_list V
-  | ne_cons : V -> ne_list V -> ne_list V.
+  | ne_nil : V -> ne_list V (* p :: <> *)
+  | ne_cons : V -> ne_list V -> ne_list V. (* p :: h *)
 
   Arguments ne_nil {_}.
   Arguments ne_cons {_}.
@@ -45,22 +45,26 @@ Section NetKAT.
     match t with 
     | t_unit => True
     | t_fail => False
-    | t_check f v => 
+    | t_check f v => (* syntax for pkt . f = v *)
       match h with 
-      | ne_nil p => p f = v
-      | ne_cons p _ => p f = v
+      | ne_nil p => 
+        p f = v  (* semantics for pkt . f = v when the history is pkt :: <> *)
+      | ne_cons p _ => 
+        p f = v  (* semantics for pkt . f = v when the history is pkt :: h' *)
       end
     | t_or t_l t_r => 
       interp_test t_l h \/ interp_test t_r h
     | t_and t_l t_r => 
       interp_test t_l h /\ interp_test t_r h
-    | t_neg t => ~ interp_test t h
+    | t_neg t => 
+      ~ interp_test t h
     end.
   
 
   (* Two tests are equivalent (i.e. KAT equal) if they have identical behavior on histories *)
-  Definition equiv_test l r := 
-    forall h, interp_test l h <-> interp_test r h.
+  Definition equiv_test (l r : test) : Prop := 
+    forall h, 
+      interp_test l h <-> interp_test r h.
 
   Lemma ba_seq_idem : 
     forall x, 
@@ -69,7 +73,7 @@ Section NetKAT.
     unfold equiv_test.
     intros.
     split; intros.
-    - inversion H; subst.
+    - simpl in H.
       intuition.
     - simpl.
       intuition.
