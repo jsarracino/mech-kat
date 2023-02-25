@@ -1,0 +1,2 @@
+-I _build/default/theories
+-Q _build/default/theories MechKat

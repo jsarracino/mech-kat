@@ -192,3 +192,17 @@ Section NetKAT.
       trivial.
   Qed.
 End NetKAT.
+
+Arguments t_unit {_ _}.
+Arguments t_fail {_ _}.
+Arguments t_check {_ _}.
+Arguments t_or {_ _}.
+Arguments t_and {_ _}.
+Arguments t_neg {_ _}.
+
+Arguments k_test {_ _}.
+Arguments k_put {_ _}.
+Arguments k_or {_ _}.
+Arguments k_and {_ _}.
+Arguments k_star {_ _}.
+Arguments k_dup {_ _}.
